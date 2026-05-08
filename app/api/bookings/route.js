@@ -25,6 +25,12 @@ function validateBooking(data) {
 
   if (Number(data.NumberOfTickets) > 10)
     errors.NumberOfTickets = "Cannot book more than 10 tickets at once";
+if (data.BookingDate) {
+    const bookingDate = new Date(data.BookingDate);
+    if (bookingDate < new Date()) {
+      errors.BookingDate = "Booking date cannot be in the past";
+    }
+}
 
   return errors;
 }
@@ -155,6 +161,14 @@ export async function GET(request) {
 
 //post new booking
 export async function POST(request) {
+   // Limit request body size to prevent abuse (e.g. large payloads)
+     const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 10240) { // 10KB limit
+    return NextResponse.json(
+      { success: false, message: "Request too large" },
+      { status: 413 }
+    );
+  }
   try {
     const body = await request.json();
 
