@@ -30,10 +30,10 @@ function validateEvent(data) {
   if (!data.Capacity || !CAPACITY_REGEX.test(data.Capacity))
     errors.Capacity = "Capacity must be a whole number";
 
-  if (!data.Date || !DATE_REGEX.test(data.Date))
+  if (!data.EventDate || !DATE_REGEX.test(data.EventDate))
     errors.Date = "Date must be in YYYY-MM-DD format";
 
-  if (!data.Time || !TIME_REGEX.test(data.Time))
+  if (!data.EventTime || !TIME_REGEX.test(data.EventTime))
     errors.Time = "Time must be in HH:MM format";
 
   if (!data.EventType || !VALID_EVENT_TYPES.includes(data.EventType))
@@ -65,8 +65,8 @@ export async function GET(request) {
            e.Title,
            e.Description,
            e.Location,
-           e.Date,
-           e.Time,
+           e.EventDate,
+           e.EventTime,
            e.Capacity,
            e.Price,
            e.EventType,
@@ -92,8 +92,8 @@ export async function GET(request) {
          e.Title,
          e.Description,
          e.Location,
-         e.Date,
-         e.Time,
+         e.EventDate,
+         e.EventTime,
          e.Capacity,
          e.Price,
          e.EventType,
@@ -103,7 +103,7 @@ export async function GET(request) {
          u.Email
        FROM Events e
        JOIN Users u ON e.OrganiserId = u.UserId
-       ORDER BY e.Date ASC`
+       ORDER BY e.EventDate ASC`
     );
 
     return NextResponse.json({
@@ -135,8 +135,8 @@ export async function GET(request) {
     }
      // Check if event with same title, date and location already exists
     const [existing] = await pool.execute(
-      "SELECT EventId FROM Events WHERE Title = ? AND Date = ? AND Location = ?",
-      [body.Title, body.Date, body.Location]
+      "SELECT EventId FROM Events WHERE Title = ? AND EventDate = ? AND Location = ?",
+      [body.Title, body.EventDate, body.Location]
     );
 
     if (existing.length > 0) {
@@ -146,14 +146,14 @@ export async function GET(request) {
       );
     }
     const [insertresult] = await pool.execute(
-        `INSERT INTO Events (Title, Description, Location, Date, Time, Capacity, Price, EventType, OrganiserId)
+        `INSERT INTO Events (Title, Description, Location, EventDate, EventTime, Capacity, Price, EventType, OrganiserId)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.Title,
         body.Description,
         body.Location,
-        body.Date,
-        body.Time,
+        body.EventDate,
+        body.EventTime,
         body.Capacity,
         body.Price,
         body.EventType,
@@ -167,8 +167,8 @@ export async function GET(request) {
       title: body.Title,
       description: body.Description,
       location: body.Location,
-      date: body.Date,
-      time: body.Time,
+      date: body.EventDate,
+      time: body.EventTime,
       capacity: body.Capacity,
       price: body.Price,
       eventType: body.EventType,
