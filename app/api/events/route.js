@@ -1,6 +1,7 @@
-import pool from "../libs/db";
+import pool from "../../libs/db";
 import { NextResponse } from "next/server";
-// validation regex patterns
+
+// Validation regex patterns
 const EVENTID_REGEX = /^\d+$/;
 const TITLE_REGEX = /^[a-zA-Z0-9 .&'-]{3,100}$/;
 const LOCATION_REGEX = /^[a-zA-Z0-9 .,'"-]{3,200}$/;
@@ -31,10 +32,10 @@ function validateEvent(data) {
     errors.Capacity = "Capacity must be a whole number";
 
   if (!data.EventDate || !DATE_REGEX.test(data.EventDate))
-    errors.Date = "Date must be in YYYY-MM-DD format";
+    errors.EventDate = "Date must be in YYYY-MM-DD format";
 
   if (!data.EventTime || !TIME_REGEX.test(data.EventTime))
-    errors.Time = "Time must be in HH:MM format";
+    errors.EventTime = "Time must be in HH:MM format";
 
   if (!data.EventType || !VALID_EVENT_TYPES.includes(data.EventType))
     errors.EventType = "Please select a valid event type";
@@ -45,22 +46,23 @@ function validateEvent(data) {
   return errors;
 }
 
-// get event api route handler
+// GET - Fetch events
 export async function GET(request) {
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
-// If eventId is provided, validate it and fetch the specific event, otherwise fetch all events
-    try {
-        //search for the event in the database by eventId
-        if (eventId) {
-            if(!EVENTID_REGEX.test(eventId)) {
-                return NextResponse.json(
-                    { success: false, message: "Invalid eventId format" }, 
-                    { status: 400 }
-                );
-            }
-            const [rows] = await pool.execute(
-            `SELECT
+  const { searchParams } = new URL(request.url);
+  const eventId = searchParams.get("eventId");
+
+  try {
+    // If eventId provided, fetch that specific event
+    if (eventId) {
+      if (!EVENTID_REGEX.test(eventId)) {
+        return NextResponse.json(
+          { success: false, message: "Invalid eventId format" },
+          { status: 400 }
+        );
+      }
+
+      const [rows] = await pool.execute(
+        `SELECT
            e.EventId,
            e.Title,
            e.Description,
@@ -79,13 +81,14 @@ export async function GET(request) {
          WHERE e.EventId = ?`,
         [eventId]
       );
-      return NextResponse.json({ 
-        success: true, 
-        event: rows[0],
-    });
-}
 
-// Get all events if no eventId provided
+      return NextResponse.json({
+        success: true,
+        event: rows[0],
+      });
+    }
+
+    // Get ALL events if no eventId provided
     const [rows] = await pool.execute(
       `SELECT
          e.EventId,
@@ -119,8 +122,9 @@ export async function GET(request) {
     );
   }
 }
-      //Post - create new event api route handler
-     export async function POST(request) {
+
+// POST - Create new event
+export async function POST(request) {
   try {
     const body = await request.json();
 
@@ -133,7 +137,8 @@ export async function GET(request) {
         { status: 400 }
       );
     }
-     // Check if event with same title, date and location already exists
+
+    // Check if event with same title, date and location already exists
     const [existing] = await pool.execute(
       "SELECT EventId FROM Events WHERE Title = ? AND EventDate = ? AND Location = ?",
       [body.Title, body.EventDate, body.Location]
@@ -145,8 +150,10 @@ export async function GET(request) {
         { status: 409 }
       );
     }
-    const [insertresult] = await pool.execute(
-        `INSERT INTO Events (Title, Description, Location, EventDate, EventTime, Capacity, Price, EventType, OrganiserId)
+
+    // Insert new event into database
+    const [insertResult] = await pool.execute(
+      `INSERT INTO Events (Title, Description, Location, EventDate, EventTime, Capacity, Price, EventType, OrganiserId)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.Title,
@@ -161,14 +168,13 @@ export async function GET(request) {
       ]
     );
 
-   // Fetch the newly created event to return in the response
     const newEvent = {
-      eventId: insertresult.insertId,
+      eventId: insertResult.insertId,
       title: body.Title,
       description: body.Description,
       location: body.Location,
-      date: body.EventDate,
-      time: body.EventTime,
+      eventDate: body.EventDate,
+      eventTime: body.EventTime,
       capacity: body.Capacity,
       price: body.Price,
       eventType: body.EventType,
@@ -186,80 +192,80 @@ export async function GET(request) {
       { success: false, errors: { general: "Something went wrong. Please try again." } },
       { status: 500 }
     );
+  }
 }
-     }
-     // Put - update existing event api route handler
-     export async function PUT(request) {
+
+// PUT - Update existing event
+export async function PUT(request) {
   try {
-    
     const body = await request.json();
-   
-     // eventId is required to know which event to update
+
+    // eventId is required to know which event to update
     if (!body.eventId || !EVENTID_REGEX.test(body.eventId)) {
       return NextResponse.json(
         { success: false, message: "Valid eventId is required" },
         { status: 400 }
       );
     }
+
     // Run validation
     const errors = validateEvent(body);
     if (Object.keys(errors).length > 0) {
-        return NextResponse.json(
-            { success: false, errors, values: body },
-            { status: 400 }
-        );
+      return NextResponse.json(
+        { success: false, errors, values: body },
+        { status: 400 }
+      );
     }
 
-    const connection =  await pool.getConnection();
+    const connection = await pool.getConnection();
     await connection.beginTransaction();
-    
-     try {
-    //find the event in the database by eventId
-    const [eventRows] = await connection.execute(
-      "SELECT EventId FROM Events WHERE EventId = ?",
-      [body.eventId],
-    );
-    if (eventRows.length === 0) {
+
+    try {
+      // Check event exists in database
+      const [eventRows] = await connection.execute(
+        "SELECT EventId FROM Events WHERE EventId = ?",
+        [body.eventId]
+      );
+
+      if (eventRows.length === 0) {
         await connection.rollback();
         connection.release();
         return NextResponse.json(
-            { success: false, message: "Event not found" },
-            { status: 404 }
+          { success: false, message: "Event not found" },
+          { status: 404 }
         );
-    }
-
-     // Map fields to update dynamically
-    const fieldMap = {
-      Title: "Title",
-      Description: "Description",
-      Location: "Location",
-      Date: "Date",
-      Time: "Time",
-      Capacity: "Capacity",
-      Price: "Price",
-      EventType: "EventType",
-    };
-
-    const updates = [];
-    const values = [];
-
-    for (const [frontendField, dbField] of Object.entries(fieldMap)) {
-      if (body[frontendField] !== undefined) {
-        updates.push(`${dbField} = ?`);
-        values.push(body[frontendField]);
       }
-    }
 
-    //add eventId to values for the WHERE clause
-    values.push(eventId);
+      // Map frontend fields to database columns
+      const fieldMap = {
+        Title: "Title",
+        Description: "Description",
+        Location: "Location",
+        EventDate: "EventDate",
+        EventTime: "EventTime",
+        Capacity: "Capacity",
+        Price: "Price",
+        EventType: "EventType",
+      };
 
-    
+      const updates = [];
+      const values = [];
+
+      // Build update query dynamically
+      for (const [frontendField, dbField] of Object.entries(fieldMap)) {
+        if (body[frontendField] !== undefined) {
+          updates.push(`${dbField} = ?`);
+          values.push(body[frontendField]);
+        }
+      }
+
       if (updates.length > 0) {
-        values.push(eventId);
+        // Add eventId for WHERE clause
+        values.push(body.eventId);
         const query = `UPDATE Events SET ${updates.join(", ")} WHERE EventId = ?`;
         await connection.execute(query, values);
       }
-        // Commit transaction and release connection
+
       await connection.commit();
       connection.release();
 
@@ -267,12 +273,14 @@ export async function GET(request) {
         success: true,
         message: "Event updated successfully",
       });
+
     } catch (err) {
       await connection.rollback();
       connection.release();
       throw err;
     }
- } catch (err) {
+
+  } catch (err) {
     console.error("PUT /api/events error:", err);
     return NextResponse.json(
       { success: false, message: "Update failed" },
@@ -281,13 +289,13 @@ export async function GET(request) {
   }
 }
 
-// Delete - delete existing event api route handler
+// DELETE - Remove event
 export async function DELETE(request) {
-    const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
 
   // Validate eventId
-    if (!eventId || !EVENTID_REGEX.test(eventId)) {
+  if (!eventId || !EVENTID_REGEX.test(eventId)) {
     return NextResponse.json(
       { success: false, message: "Valid eventId is required" },
       { status: 400 }
@@ -327,6 +335,3 @@ export async function DELETE(request) {
     );
   }
 }
-
-
-

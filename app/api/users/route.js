@@ -1,27 +1,26 @@
-import pool from "../libs/db";
+import pool from "../../libs/db";
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt"; 
+import bcrypt from "bcrypt";
 
 // Validation regex patterns
 const USERID_REGEX = /^\d+$/;
 const NAME_REGEX = /^[a-zA-Z]{2,50}$/;
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 const MOBILE_REGEX = /^\d{10}$/;
-// IMPROVED PASSWORD REGEX - requires uppercase, lowercase, number, special char
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 const VALID_ROLES = ["organiser", "attendee", "admin"];
 
-// Check if email already exists in database (used for both create and update)
+// Check if email already exists in database
 async function emailExists(email, excludeUserId = null) {
   let query = "SELECT UserId FROM Users WHERE Email = ?";
   let params = [email];
-  
+
   if (excludeUserId) {
     query += " AND UserId != ?";
     params.push(excludeUserId);
   }
-  
+
   const [rows] = await pool.execute(query, params);
   return rows.length > 0;
 }
@@ -52,7 +51,7 @@ function validateUser(data, isUpdate = false) {
 
   if (!isUpdate || data.Password !== undefined) {
     if (!data.Password || !PASSWORD_REGEX.test(data.Password))
-      errors.Password = "Password must be at least 8 characters with uppercase, lowercase, number, and special character";
+      errors.Password = "Password must be at least 8 characters with uppercase, lowercase, number and special character";
   }
 
   if (!isUpdate || data.Role !== undefined) {
@@ -63,7 +62,7 @@ function validateUser(data, isUpdate = false) {
   return errors;
 }
 
-// GET users - can filter by userId, otherwise returns all users with pagination
+// GET - Fetch users
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
@@ -88,11 +87,9 @@ export async function GET(request) {
            u.LastName,
            u.Email,
            u.Mobile,
-           u.Role,
-           u.Status,
-           u.CreatedAt
+           u.Role
          FROM Users u
-         WHERE u.UserId = ? AND u.Status = 'active'`,
+         WHERE u.UserId = ?`,
         [userId]
       );
 
@@ -117,19 +114,16 @@ export async function GET(request) {
          u.LastName,
          u.Email,
          u.Mobile,
-         u.Role,
-         u.Status,
-         u.CreatedAt
+         u.Role
        FROM Users u
-       WHERE u.Status = 'active'
        ORDER BY u.LastName ASC
        LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    
+
     // Get total count for pagination
     const [countResult] = await pool.execute(
-      `SELECT COUNT(*) as total FROM Users WHERE Status = 'active'`
+      `SELECT COUNT(*) as total FROM Users`
     );
     const total = countResult[0].total;
 
@@ -155,16 +149,16 @@ export async function GET(request) {
 
 // POST - Create new user
 export async function POST(request) {
-  try {
-    // ADD REQUEST SIZE LIMIT CHECK
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 10240) {
-      return NextResponse.json(
-        { success: false, message: "Request too large" },
-        { status: 413 }
-      );
-    }
+  // Limit request body size to prevent abuse
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 10240) {
+    return NextResponse.json(
+      { success: false, message: "Request too large" },
+      { status: 413 }
+    );
+  }
 
+  try {
     const body = await request.json();
 
     // Run validation
@@ -178,28 +172,28 @@ export async function POST(request) {
     }
 
     // Check if email already exists
-    const emailExists_check = await emailExists(body.Email); // RENAMED to avoid conflict
-    if (emailExists_check) {
+    const emailTaken = await emailExists(body.Email);
+    if (emailTaken) {
       return NextResponse.json(
         { success: false, message: "An account with this email already exists" },
         { status: 409 }
       );
     }
 
-    // HASH PASSWORD BEFORE SAVING
-    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+    // Hash password before saving
+    const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(body.Password, saltRounds);
 
-    // Insert new user into database with hashed password
+    // Insert new user into database
     const [insertResult] = await pool.execute(
-      `INSERT INTO Users (FirstName, LastName, Email, Mobile, Password, Role, Status, CreatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())`,
+      `INSERT INTO Users (FirstName, LastName, Email, Mobile, Password, Role)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         body.FirstName,
         body.LastName,
         body.Email,
         body.Mobile,
-        hashedPassword, // USE HASHED PASSWORD
+        hashedPassword,
         body.Role,
       ]
     );
@@ -211,7 +205,6 @@ export async function POST(request) {
       email: body.Email,
       mobile: body.Mobile,
       role: body.Role,
-      status: 'active'
     };
 
     return NextResponse.json(
@@ -221,10 +214,9 @@ export async function POST(request) {
 
   } catch (err) {
     console.error("POST /api/users error:", err);
-    // HANDLE DUPLICATE ENTRY ERROR (e.g. email uniqueness)
     if (err.code === 'ER_DUP_ENTRY') {
       return NextResponse.json(
-        { success: false, message: "Duplicate entry - email already exists" },
+        { success: false, message: "Email already exists" },
         { status: 409 }
       );
     }
@@ -235,7 +227,7 @@ export async function POST(request) {
   }
 }
 
-// PUT - update user details
+// PUT - Update user details
 export async function PUT(request) {
   try {
     const body = await request.json();
@@ -254,7 +246,7 @@ export async function PUT(request) {
     try {
       // Check user exists in database
       const [userRows] = await connection.execute(
-        "SELECT UserId, Email FROM Users WHERE UserId = ? AND Status = 'active'",
+        "SELECT UserId, Email FROM Users WHERE UserId = ?",
         [body.UserId]
       );
 
@@ -267,10 +259,10 @@ export async function PUT(request) {
         );
       }
 
-      // If email is being updated, check if new email already exists for another user
+      // Check if new email already exists for another user
       if (body.Email && body.Email !== userRows[0].Email) {
-        const emailExists_check = await emailExists(body.Email, body.UserId);
-        if (emailExists_check) {
+        const emailTaken = await emailExists(body.Email, body.UserId);
+        if (emailTaken) {
           await connection.rollback();
           connection.release();
           return NextResponse.json(
@@ -283,7 +275,7 @@ export async function PUT(request) {
       const updates = [];
       const values = [];
 
-      // Handle regular fields
+      // Update first name if provided
       if (body.FirstName !== undefined) {
         if (!NAME_REGEX.test(body.FirstName)) {
           await connection.rollback();
@@ -297,6 +289,7 @@ export async function PUT(request) {
         values.push(body.FirstName);
       }
 
+      // Update last name if provided
       if (body.LastName !== undefined) {
         if (!NAME_REGEX.test(body.LastName)) {
           await connection.rollback();
@@ -310,6 +303,7 @@ export async function PUT(request) {
         values.push(body.LastName);
       }
 
+      // Update email if provided
       if (body.Email !== undefined) {
         if (!EMAIL_REGEX.test(body.Email)) {
           await connection.rollback();
@@ -323,6 +317,7 @@ export async function PUT(request) {
         values.push(body.Email);
       }
 
+      // Update mobile if provided
       if (body.Mobile !== undefined) {
         if (!MOBILE_REGEX.test(body.Mobile)) {
           await connection.rollback();
@@ -336,6 +331,7 @@ export async function PUT(request) {
         values.push(body.Mobile);
       }
 
+      // Update role if provided
       if (body.Role !== undefined) {
         if (!VALID_ROLES.includes(body.Role)) {
           await connection.rollback();
@@ -349,30 +345,25 @@ export async function PUT(request) {
         values.push(body.Role);
       }
 
-      // Handle password update separately with hashing
+      // Hash and update password if provided
       if (body.Password !== undefined) {
         if (!PASSWORD_REGEX.test(body.Password)) {
           await connection.rollback();
           connection.release();
           return NextResponse.json(
-            { success: false, message: "Password must be at least 8 characters with uppercase, lowercase, number, and special character" },
+            { success: false, message: "Password must be at least 8 characters with uppercase, lowercase, number and special character" },
             { status: 400 }
           );
         }
-        const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-        const hashedPassword = await bcrypt.hash(body.Password, saltRounds);
+        const hashedPassword = await bcrypt.hash(body.Password, 10);
         updates.push("Password = ?");
-        values.push(hashedPassword); // USE HASHED PASSWORD
+        values.push(hashedPassword);
       }
 
-      // Always update UpdatedAt timestamp
-      updates.push("UpdatedAt = NOW()");
-
-      // WHERE clause value
+      // Add userId for WHERE clause
       values.push(body.UserId);
 
-      // Only run update if there are fields to update
-      if (updates.length > 1) { // more than just UpdatedAt
+      if (updates.length > 0) {
         await connection.execute(
           `UPDATE Users SET ${updates.join(", ")} WHERE UserId = ?`,
           values
@@ -397,7 +388,7 @@ export async function PUT(request) {
     console.error("PUT /api/users error:", err);
     if (err.code === 'ER_DUP_ENTRY') {
       return NextResponse.json(
-        { success: false, message: "Duplicate entry - email already exists" },
+        { success: false, message: "Email already exists" },
         { status: 409 }
       );
     }
@@ -408,7 +399,7 @@ export async function PUT(request) {
   }
 }
 
-// DELETE - soft delete user (CHANGED from hard delete)
+// DELETE - Remove user
 export async function DELETE(request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
@@ -422,9 +413,9 @@ export async function DELETE(request) {
   }
 
   try {
-    // Check user exists and is active
+    // Check user exists before deleting
     const [rows] = await pool.execute(
-      "SELECT UserId, Status FROM Users WHERE UserId = ?",
+      "SELECT UserId FROM Users WHERE UserId = ?",
       [userId]
     );
 
@@ -435,28 +426,21 @@ export async function DELETE(request) {
       );
     }
 
-    if (rows[0].Status === "inactive") {
-      return NextResponse.json(
-        { success: false, message: "User is already inactive" },
-        { status: 409 }
-      );
-    }
-
-    // Soft delete the user by setting status to 'inactive' and recording deletion time
+    // Delete the user
     await pool.execute(
-      "UPDATE Users SET Status = 'inactive', DeletedAt = NOW() WHERE UserId = ?",
+      "DELETE FROM Users WHERE UserId = ?",
       [userId]
     );
 
     return NextResponse.json({
       success: true,
-      message: "User deactivated successfully",
+      message: "User deleted successfully",
     });
 
   } catch (err) {
     console.error("DELETE /api/users error:", err);
     return NextResponse.json(
-      { success: false, message: "Deactivation failed" },
+      { success: false, message: "Deletion failed" },
       { status: 500 }
     );
   }
