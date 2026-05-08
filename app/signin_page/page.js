@@ -13,12 +13,21 @@ export default function SignUpPage() {
   });
 
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState({}); //created to hold all the errors in one
 
   function handleChange(e) {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    const {name, value} = e.target;
+    setFormData({ ...formData, [name]: value});
+
+    setErrors({
+      ...errors,
+      [name]: ""
+    })
   }
 
   async function handleSubmit(e) {
+
     e.preventDefault();
     setMessage("");
 
@@ -31,8 +40,21 @@ export default function SignUpPage() {
 
       const data = await res.json();
 
+      //If the request failed (for example validation errors or duplicate email)
       if (!res.ok) {
-        setMessage(data.message || JSON.stringify(data.errors));
+
+        //Check if the backend returned validation errors
+        if(data.errors){
+          setErrors(data.errors);
+          setMessage("Please fix all the errors above. ");
+
+        }else{
+
+          //Otherwise show the general backend error message
+          setMessage(data.message || "Something went wrong.");
+        }
+
+        //Stop function so success code does not run
         return;
       }
 
@@ -70,6 +92,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.FirstName && (
+            <p className="field-error">{errors.FirstName}</p> //display error message from backend to user
+          )}
         </label>
 
         <label>
@@ -82,6 +108,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.LastName && (
+            <p className="field-error">{errors.LastName}</p> //display error message from backend to user
+          )}
         </label>
 
         <label>
@@ -94,10 +124,14 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.Email && (
+            <p className="field-error">{errors.Email}</p> //display error message from backend to user
+          )}
         </label>
 
         <label>
-          Mobile (10 digits)
+          Mobile
           <input
             type="text"
             name="Mobile"
@@ -106,6 +140,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.Mobile && (
+            <p className="field-error">{errors.Mobile}</p> //display error message from backend to user
+          )}
         </label>
 
         <label>
@@ -118,6 +156,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+        {errors.Password && ( //to display message from backend to the user 
+           <p className="field-error">{errors.Password}</p>
+        )}
         </label>
 
         <label>
