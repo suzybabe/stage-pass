@@ -1,4 +1,4 @@
-import pool from "../libs/db";
+import pool from "../../libs/db";
 import { NextResponse } from "next/server";
 
 // Validation regex patterns
@@ -29,7 +29,7 @@ function validateBooking(data) {
   return errors;
 }
 
-// GET bookings - can filter by bookingId or userId, otherwise returns all bookings
+// GET - Fetch bookings
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const bookingId = searchParams.get("bookingId");
@@ -153,8 +153,17 @@ export async function GET(request) {
   }
 }
 
-//post new booking
+// POST - Create new booking
 export async function POST(request) {
+  // Limit request body size to prevent abuse
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 10240) {
+    return NextResponse.json(
+      { success: false, message: "Request too large" },
+      { status: 413 }
+    );
+  }
+
   try {
     const body = await request.json();
 
@@ -270,7 +279,7 @@ export async function POST(request) {
   }
 }
 
-//delete booking (cancel) - only updates status to 'cancelled' instead of removing record for data integrity and historical purposes
+// DELETE - Cancel booking
 export async function DELETE(request) {
   const { searchParams } = new URL(request.url);
   const bookingId = searchParams.get("bookingId");
@@ -284,7 +293,7 @@ export async function DELETE(request) {
   }
 
   try {
-    // Check booking exists before deleting
+    // Check booking exists before cancelling
     const [rows] = await pool.execute(
       "SELECT BookingId, Status FROM Bookings WHERE BookingId = ?",
       [bookingId]
@@ -305,7 +314,7 @@ export async function DELETE(request) {
       );
     }
 
-    // Cancel the booking by updating status
+    // Cancel booking by updating status
     await pool.execute(
       "UPDATE Bookings SET Status = 'cancelled' WHERE BookingId = ?",
       [bookingId]
