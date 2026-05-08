@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@reference "../globals.css";
+
+/* Container */
+.booking-container {
+  @apply flex flex-col items-center p-10 text-center;
+}
+
+/* Header */
+.booking-header {
+  @apply max-w-2xl mt-10;
+}
+
+.booking-title {
+  @apply text-4xl font-bold mb-4;
+}
+
+.booking-subtitle {
+  @apply text-gray-600 mb-10;
+}
+
+/* Form */
+.booking-form {
+  @apply flex flex-col gap-6 w-full max-w-xl bg-gray-100 p-8 rounded-xl shadow text-left;
+}
+
+.input {
+  @apply w-full p-3 border rounded-lg text-black;
+}
+
+.textarea {
+  @apply w-full p-3 border rounded-lg text-black;
+}
+
+.submit-button {
+  @apply w-full py-3 bg-purple-700 text-white rounded-lg hover:bg-pink-700 transition;
+}
+
+/* Footer */
+.booking-footer {
+  @apply mt-20 text-gray-500;
+}
