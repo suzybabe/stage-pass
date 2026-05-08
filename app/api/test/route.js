@@ -1,5 +1,4 @@
-import db from "../libs/db";
-
+import pool from "../libs/db";
 export async function GET() {
   try {
     const [rows] = await pool.execute("SELECT 1");
