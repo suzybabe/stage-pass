@@ -11,4 +11,4 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 0
 });
 
-export default db;
+export default pool;
