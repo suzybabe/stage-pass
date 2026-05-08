@@ -29,6 +29,7 @@ CREATE TABLE `bookings` (
   `NumberOfTickets` int DEFAULT NULL,
   `TotalPrice` decimal(10,2) DEFAULT NULL,
   `BookingDate` datetime DEFAULT CURRENT_TIMESTAMP,
+  `Status` varchar(20) DEFAULT 'confirmed',
   PRIMARY KEY (`BookingId`),
   KEY `UserId` (`UserId`),
   KEY `EventId` (`EventId`),
@@ -117,4 +118,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-08 12:33:34
+-- Dump completed on 2026-05-08 13:06:12

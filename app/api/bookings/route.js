@@ -59,8 +59,8 @@ export async function GET(request) {
            e.EventId,
            e.Title,
            e.Location,
-           e.Date,
-           e.Time,
+           e.EventDate,
+           e.EventTime,
            e.Price
          FROM Bookings b
          JOIN Users u ON b.UserId = u.UserId
@@ -98,8 +98,8 @@ export async function GET(request) {
            e.EventId,
            e.Title,
            e.Location,
-           e.Date,
-           e.Time,
+           e.EventDate,
+           e.EventTime,
            e.Price
          FROM Bookings b
          JOIN Users u ON b.UserId = u.UserId
@@ -130,8 +130,8 @@ export async function GET(request) {
          e.EventId,
          e.Title,
          e.Location,
-         e.Date,
-         e.Time,
+         e.EventDate,
+         e.EventTime,
          e.Price
        FROM Bookings b
        JOIN Users u ON b.UserId = u.UserId
