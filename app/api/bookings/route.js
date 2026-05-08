@@ -1,4 +1,4 @@
-import pool from "../../libs/db";
+import pool from "../libs/db";
 import { NextResponse } from "next/server";
 
 // Validation regex patterns

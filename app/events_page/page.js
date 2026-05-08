@@ -46,10 +46,11 @@ export default function EventsPage() {
             <p className="event-description">{event.Description}</p>
 
             <p className="event-detail">
-              <strong>Date:</strong> {event.Date}
+              <strong>Date:</strong> 
+              {event.EventDate ? new Date(event.EventDate).toLocaleDateString() : ""}
             </p>
             <p className="event-detail">
-              <strong>Time:</strong> {event.Time}
+              <strong>Time:</strong> {event.EventTime}
             </p>
             <p className="event-detail">
               <strong>Location:</strong> {event.Location}
