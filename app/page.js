@@ -1,8 +1,11 @@
 import Image from "next/image";
 import "./home.css"; // Import your Tailwind-based CSS file
+import NavBar from "./components/NavBar";
 
 export default function Home() {
   return (
+    <>
+    <NavBar />
     <main className="home-container">
 
       {/* welcome message and button to direct you to events without using nav */ }
@@ -52,5 +55,6 @@ export default function Home() {
       </footer>
 
     </main>
+    </>
   );
 }

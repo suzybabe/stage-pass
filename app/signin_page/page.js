@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./signup.css";
+import NavBar from "../components/NavBar";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -75,6 +76,9 @@ export default function SignUpPage() {
   }
 
   return (
+    <>
+      <NavBar />
+
     <main className="signup-container">
       <section className="signup-header">
         <h1 className="signup-title">Create Your Account</h1>
@@ -111,7 +115,7 @@ export default function SignUpPage() {
           />
 
           {errors.LastName && (
-            <p className="field-error">{errors.LastName}</p> //display error message from backend to user
+            <p className="field-error">{errors.LastName}</p>
           )}
         </label>
 
@@ -127,7 +131,7 @@ export default function SignUpPage() {
           />
 
           {errors.Email && (
-            <p className="field-error">{errors.Email}</p> //display error message from backend to user
+            <p className="field-error">{errors.Email}</p> 
           )}
         </label>
 
@@ -143,7 +147,7 @@ export default function SignUpPage() {
           />
 
           {errors.Mobile && (
-            <p className="field-error">{errors.Mobile}</p> //display error message from backend to user
+            <p className="field-error">{errors.Mobile}</p>
           )}
         </label>
 
@@ -158,7 +162,7 @@ export default function SignUpPage() {
             required
           />
 
-        {errors.Password && ( //to display message from backend to the user 
+        {errors.Password && ( 
            <p className="field-error">{errors.Password}</p>
         )}
         </label>
@@ -188,5 +192,6 @@ export default function SignUpPage() {
         © 2026 StagePass — User Registration
       </footer>
     </main>
+    </>
   );
 }
