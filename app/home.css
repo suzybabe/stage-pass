@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@reference "./globals.css";
+
+/* Container */
+.home-container {
+  @apply flex flex-col items-center text-center p-10;
+}
+
+/* Hero Section */
+.hero {
+  @apply max-w-3xl mt-10;
+}
+
+.hero-title {
+  @apply text-5xl font-bold mb-4;
+}
+
+.hero-subtitle {
+  @apply text-lg text-gray-600 mb-6;
+}
+
+.hero-button {
+  @apply px-6 py-3 bg-purple-700 text-white rounded-lg hover:bg-pink-700 transition;
+}
+
+/* Events Section */
+.events {
+  @apply w-full max-w-5xl mt-20;
+}
+
+.events-title {
+  @apply text-3xl font-semibold mb-6;
+}
+
+.events-grid { /*grid system for simple manipulation*/
+  @apply grid grid-cols-1 md:grid-cols-3 gap-6;
+}
+
+.event-card {
+  @apply border rounded-lg p-5 bg-gray-100 shadow text-purple-600;
+}
+
+/* Footer */
+.footer {
+  @apply mt-20 text-gray-500;
+}

@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `booking_app` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `booking_app`;
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
 -- Host: localhost    Database: booking_app
@@ -25,15 +23,18 @@ DROP TABLE IF EXISTS `bookings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `bookings` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int DEFAULT NULL,
-  `event_id` int DEFAULT NULL,
-  `status` varchar(50) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `event_id` (`event_id`),
-  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
+  `BookingId` int NOT NULL AUTO_INCREMENT,
+  `UserId` int DEFAULT NULL,
+  `EventId` int DEFAULT NULL,
+  `NumberOfTickets` int DEFAULT NULL,
+  `TotalPrice` decimal(10,2) DEFAULT NULL,
+  `BookingDate` datetime DEFAULT CURRENT_TIMESTAMP,
+  `Status` varchar(20) DEFAULT 'confirmed',
+  PRIMARY KEY (`BookingId`),
+  KEY `UserId` (`UserId`),
+  KEY `EventId` (`EventId`),
+  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`UserId`) REFERENCES `users` (`UserId`),
+  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`EventId`) REFERENCES `events` (`EventId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -54,14 +55,19 @@ DROP TABLE IF EXISTS `events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `events` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) DEFAULT NULL,
-  `description` text,
-  `event_date` datetime DEFAULT NULL,
-  `organiser_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `organiser_id` (`organiser_id`),
-  CONSTRAINT `events_ibfk_1` FOREIGN KEY (`organiser_id`) REFERENCES `users` (`id`)
+  `EventId` int NOT NULL AUTO_INCREMENT,
+  `Title` varchar(255) NOT NULL,
+  `Description` text,
+  `Location` varchar(255) DEFAULT NULL,
+  `Capacity` int DEFAULT NULL,
+  `Price` decimal(10,2) DEFAULT NULL,
+  `EventType` varchar(100) DEFAULT NULL,
+  `EventDate` date DEFAULT NULL,
+  `EventTime` time DEFAULT NULL,
+  `OrganiserId` int DEFAULT NULL,
+  PRIMARY KEY (`EventId`),
+  KEY `OrganiserId` (`OrganiserId`),
+  CONSTRAINT `events_ibfk_1` FOREIGN KEY (`OrganiserId`) REFERENCES `users` (`UserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -82,13 +88,15 @@ DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL,
-  `role` enum('admin','organiser','attendee') NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
+  `UserId` int NOT NULL AUTO_INCREMENT,
+  `FirstName` varchar(50) NOT NULL,
+  `LastName` varchar(50) NOT NULL,
+  `Email` varchar(100) NOT NULL,
+  `Mobile` varchar(20) DEFAULT NULL,
+  `Password` varchar(255) NOT NULL,
+  `Role` enum('organiser','attendee','admin') NOT NULL,
+  PRIMARY KEY (`UserId`),
+  UNIQUE KEY `Email` (`Email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -110,4 +118,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-07  0:10:44
+-- Dump completed on 2026-05-08 13:06:12
