@@ -34,7 +34,6 @@ export default function LoginPage() {
 
       console.log("User:", data.user);
 
-      // Optional redirect
       // window.location.href = "/";
     } else {
       setMessage(data.message || "Login failed");
