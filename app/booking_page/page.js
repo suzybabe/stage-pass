@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import "./booking.css";
+import "../events_page/events.css"; /*importing nice card style from events_page to show same card style after booking */
+import EventCard from "../components/EventCard";
 
 export default function BookingPage() {
   const [formData, setFormData] = useState({
@@ -11,8 +13,14 @@ export default function BookingPage() {
 
   const [message, setMessage] = useState("");
 
+  //Store booking details returned from API 
+  //Used to render resuable EventCard after successful booking
+  const [booking, setBooking] = useState(null);
+
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setBooking(null);   //clears the old booking when user starts typing again
+    setMessage("");     //message disappears 
   }
 
   async function handleSubmit(e) {
@@ -29,12 +37,20 @@ export default function BookingPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.message || "Error: " + JSON.stringify(data.errors));
+
+        //If backend returned existing booking,
+        //store it so the booking card can still display
+        if(data.booking){
+          setBooking(data.booking); //save successful booking which triggers EventCard to render
+        }
+
+        setMessage(data.message || "Something went wrong");
         return;
       }
 
-      setMessage("Booking confirmed! Booking ID: " + data.booking.bookingId);
+      setMessage("Booking confirmed! Booking ID: " + data.booking.BookingId);
       setFormData({ UserId: "", EventId: "", NumberOfTickets: "" });
+      setBooking(data.booking);
 
     } catch (err) {
       setMessage("Something went wrong.");
@@ -99,6 +115,13 @@ export default function BookingPage() {
         </form>
 
         {message && <p className="booking-message">{message}</p>}
+
+       {/*Reusable event card component used to display booking confirmation or existing booking details */}
+       {booking && (
+         <div className="events-grid">
+          <EventCard event={booking} bookingMode={true} /> 
+        </div>
+       )}
 
         <footer className="booking-footer">
           © 2026 StagePass — Event Booking Portal
