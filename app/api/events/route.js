@@ -1,5 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
+import { getUserFromSession, hasRole } from "../libs/authen";
 
 // Validation regex patterns
 const EVENTID_REGEX = /^\d+$/;
@@ -126,6 +127,21 @@ export async function GET(request) {
 // POST - Create new event
 export async function POST(request) {
   try {
+
+    // Check logged in user
+    const user = await getUserFromSession(request);
+
+    // Only organiser/admin allowed
+    if (!hasRole(user, ["organiser", "admin"])) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Access denied",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     // Run validation
@@ -136,6 +152,8 @@ export async function POST(request) {
         { success: false, errors, values: body },
         { status: 400 }
       );
+
+      
     }
 
     // Check if event with same title, date and location already exists
@@ -198,6 +216,18 @@ export async function POST(request) {
 // PUT - Update existing event
 export async function PUT(request) {
   try {
+
+    const user = await getUserFromSession(request);
+
+    if (!hasRole(user, ["organiser", "admin"])) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Access denied",
+      },
+    { status: 403 }
+    );
+  }
     const body = await request.json();
 
     // eventId is required to know which event to update
@@ -291,6 +321,19 @@ export async function PUT(request) {
 
 // DELETE - Remove event
 export async function DELETE(request) {
+
+
+  const user = await getUserFromSession(request);
+
+  if (!hasRole(user, ["admin"])) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Admin access required",
+    },
+    { status: 403 }
+  );
+}
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
 

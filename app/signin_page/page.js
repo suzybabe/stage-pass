@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./signup.css";
+import NavBar from "../components/NavBar";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -13,12 +14,21 @@ export default function SignUpPage() {
   });
 
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState({}); //created to hold all the errors in one
 
   function handleChange(e) {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    const {name, value} = e.target;
+    setFormData({ ...formData, [name]: value});
+
+    setErrors({
+      ...errors,
+      [name]: ""
+    })
   }
 
   async function handleSubmit(e) {
+
     e.preventDefault();
     setMessage("");
 
@@ -31,8 +41,21 @@ export default function SignUpPage() {
 
       const data = await res.json();
 
+      //If the request failed (for example validation errors or duplicate email)
       if (!res.ok) {
-        setMessage(data.message || JSON.stringify(data.errors));
+
+        //Check if the backend returned validation errors
+        if(data.errors){
+          setErrors(data.errors);
+          setMessage("Please fix all the errors above. ");
+
+        }else{
+
+          //Otherwise show the general backend error message
+          setMessage(data.message || "Something went wrong.");
+        }
+
+        //Stop function so success code does not run
         return;
       }
 
@@ -45,6 +68,7 @@ export default function SignUpPage() {
         Password: "",
         Role: "attendee",
       });
+      setErrors({});
 
     } catch (err) {
       setMessage("Something went wrong.");
@@ -52,6 +76,9 @@ export default function SignUpPage() {
   }
 
   return (
+    <>
+      <NavBar />
+
     <main className="signup-container">
       <section className="signup-header">
         <h1 className="signup-title">Create Your Account</h1>
@@ -70,6 +97,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.FirstName && (
+            <p className="field-error">{errors.FirstName}</p> //display error message from backend to user
+          )}
         </label>
 
         <label>
@@ -82,6 +113,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.LastName && (
+            <p className="field-error">{errors.LastName}</p>
+          )}
         </label>
 
         <label>
@@ -94,10 +129,14 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.Email && (
+            <p className="field-error">{errors.Email}</p> 
+          )}
         </label>
 
         <label>
-          Mobile (10 digits)
+          Mobile
           <input
             type="text"
             name="Mobile"
@@ -106,6 +145,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+          {errors.Mobile && (
+            <p className="field-error">{errors.Mobile}</p>
+          )}
         </label>
 
         <label>
@@ -118,6 +161,10 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
           />
+
+        {errors.Password && ( 
+           <p className="field-error">{errors.Password}</p>
+        )}
         </label>
 
         <label>
@@ -145,5 +192,6 @@ export default function SignUpPage() {
         © 2026 StagePass — User Registration
       </footer>
     </main>
+    </>
   );
 }

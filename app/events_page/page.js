@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import "./events.css";
+import EventCard from "../components/EventCard";
+import NavBar from "../components/NavBar";
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
@@ -33,51 +35,28 @@ export default function EventsPage() {
   }, []);
 
   return (
+    <>
+      <NavBar />
     <main className="events-container">
       <h1 className="events-title">Upcoming Events</h1>
 
       {message && <p className="events-message">{message}</p>}
 
       <div className="events-grid">
-        {events.map((event) => (
-          <div key={event.EventId} className="event-card">
-            <h2 className="event-name">{event.Title}</h2>
 
-            <p className="event-description">{event.Description}</p>
-
-            <p className="event-detail">
-              <strong>Date:</strong> 
-              {event.EventDate ? new Date(event.EventDate).toLocaleDateString() : ""}
-            </p>
-            <p className="event-detail">
-              <strong>Time:</strong> {event.EventTime}
-            </p>
-            <p className="event-detail">
-              <strong>Location:</strong> {event.Location}
-            </p>
-
-            <p className="event-detail">
-              <strong>Price:</strong> €{event.Price}
-            </p>
-
-            <p className="event-detail">
-              <strong>Capacity:</strong> {event.Capacity}
-            </p>
-
-            <p className="event-detail">
-              <strong>Type:</strong> {event.EventType}
-            </p>
-
-            <p className="event-organiser">
-              Organised by: {event.FirstName} {event.LastName} ({event.Email})
-            </p>
-          </div>
-        ))}
+      {/*Importing components/EventCard to avoid duplicate code as it will be used in other pages */}
+      {events.map((event) => (
+         <EventCard
+           key={event.EventId}
+           event={event}
+         />
+      ))}
       </div>
 
       <footer className="events-footer">
         © 2026 StagePass — Events Directory
       </footer>
     </main>
+    </>
   );
 }

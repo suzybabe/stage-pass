@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./login.css";
+import NavBar from "../components/NavBar";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -14,12 +15,41 @@ export default function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    setMessage("Login functionality coming soon.");
+  async function handleSubmit(e) {
+  e.preventDefault();
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      setMessage("Login successful!");
+
+      console.log("User:", data.user);
+
+      // Optional redirect
+      // window.location.href = "/";
+    } else {
+      setMessage(data.message || "Login failed");
+    }
+
+  } catch (error) {
+    console.error(error);
+    setMessage("Something went wrong");
   }
+}
 
   return (
+    <>
+     <NavBar />
+
     <main className="login-container">
       <section className="login-header">
         <h1 className="login-title">Sign In</h1>
@@ -63,5 +93,6 @@ export default function LoginPage() {
         © 2026 StagePass — Login Portal
       </footer>
     </main>
+    </>
   );
 }

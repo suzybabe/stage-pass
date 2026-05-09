@@ -1,5 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
+import { getUserFromSession, hasRole } from "../libs/authen";
 
 // Validation regex patterns
 const BOOKINGID_REGEX = /^\d+$/;
@@ -165,6 +166,18 @@ export async function POST(request) {
   }
 
   try {
+
+    const user = await getUserFromSession(request);
+
+    if (!hasRole(user, ["attendee"])) {
+    return NextResponse.json(
+      {
+      success: false,
+      message: "Only attendees can book events",
+    },
+    { status: 403 }
+    );
+  }
     const body = await request.json();
 
     // Run validation
@@ -191,7 +204,7 @@ export async function POST(request) {
         await connection.rollback();
         connection.release();
         return NextResponse.json(
-          { success: false, message: "Event not found" },
+          { success: false, field: "EventId", message: "No event found with that ID" },
           { status: 404 }
         );
       }
@@ -219,18 +232,58 @@ export async function POST(request) {
 
       // Check if user already booked this event
       const [existingBooking] = await connection.execute(
-        "SELECT BookingId FROM Bookings WHERE UserId = ? AND EventId = ? AND Status = 'confirmed'",
-        [body.UserId, body.EventId]
+       `SELECT
+          b.BookingId,
+          b.NumberOfTickets,
+          b.TotalPrice,
+          b.Status,
+          e.EventId,
+          e.Title,
+          e.Description,
+          e.Location,
+          e.EventDate,
+          e.EventTime,
+          e.Price,
+          e.EventType,
+          u.FirstName,
+          u.LastName,
+          u.Email
+        FROM Bookings b
+        JOIN Events e ON b.EventId = e.EventId
+        JOIN Users u ON b.UserId = u.UserId
+        WHERE b.UserId = ? AND b.EventId = ? AND b.Status = 'confirmed'`,
+       [body.UserId, body.EventId]
       );
 
       if (existingBooking.length > 0) {
         await connection.rollback();
         connection.release();
+
         return NextResponse.json(
-          { success: false, message: "You have already booked this event" },
+          { 
+            success: false, 
+            message: "You have already booked this event",
+            booking: existingBooking[0],
+          },
           { status: 409 }
         );
       }
+
+      //Check if user exists before creating booking
+      const [userRows] = await connection.execute(
+       "SELECT UserId FROM Users WHERE UserId = ?",
+       [body.UserId]
+      );
+
+      if (userRows.length === 0) {
+        await connection.rollback();
+        connection.release();
+
+        return NextResponse.json(
+        { success: false, field: "UserId", message: "No user found with that ID" },
+        { status: 404 }
+      );
+    }
 
       // Calculate total price
       const totalPrice = event.Price * Number(body.NumberOfTickets);
@@ -247,21 +300,36 @@ export async function POST(request) {
         ]
       );
 
+  const [bookingRows] = await connection.execute(
+  `   SELECT
+        b.BookingId,
+        b.NumberOfTickets,
+        b.TotalPrice,
+        b.Status,
+        e.EventId,
+        e.Title,
+        e.Description,
+        e.Location,
+        e.EventDate,
+        e.EventTime,
+        e.Price,
+        e.EventType,
+        u.FirstName,
+        u.LastName,
+        u.Email
+      FROM Bookings b
+      JOIN Events e ON b.EventId = e.EventId
+      JOIN Users u ON b.UserId = u.UserId
+      WHERE b.BookingId = ?`,
+     [insertResult.insertId]
+     );
+
       await connection.commit();
       connection.release();
 
-      const newBooking = {
-        bookingId: insertResult.insertId,
-        userId: body.UserId,
-        eventId: body.EventId,
-        numberOfTickets: body.NumberOfTickets,
-        totalPrice: totalPrice,
-        status: "confirmed",
-      };
-
       return NextResponse.json(
-        { success: true, booking: newBooking },
-        { status: 201 }
+         { success: true, booking: bookingRows[0] },
+         { status: 201 }
       );
 
     } catch (err) {
