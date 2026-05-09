@@ -1,0 +1,17 @@
+@reference "../globals.css";
+
+.navbar {
+  @apply flex items-center justify-between px-10 py-4 bg-gray-900 text-white shadow;
+}
+
+.logo {
+  @apply text-2xl font-bold text-pink-500;
+}
+
+.nav-links {
+  @apply flex gap-6 items-center;
+}
+
+.nav-links a {
+  @apply text-sm font-semibold hover:text-pink-400 transition;
+}

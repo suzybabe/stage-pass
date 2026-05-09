@@ -1,0 +1,46 @@
+
+@reference "../globals.css";
+
+.signup-container {
+  @apply flex flex-col items-center p-10 text-center;
+}
+
+.signup-header {
+  @apply max-w-2xl mt-10;
+}
+
+.signup-title {
+  @apply text-4xl font-bold mb-4;
+}
+
+.signup-subtitle {
+  @apply text-gray-400 mb-10;
+}
+
+.signup-form {
+  @apply flex flex-col gap-6 w-full max-w-xl bg-gray-800 p-8 rounded-xl shadow text-left text-white;
+}
+
+.input {
+  @apply w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-white;
+}
+
+.submit-button {
+  @apply w-full py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition;
+}
+
+.signup-message {
+   @apply mt-6 text-red-400 text-lg font-semibold; 
+}
+
+.input-error {
+  @apply border-2 border-red-500 bg-red-50 text-black;
+}
+
+.field-error {
+  @apply mt-2 text-sm font-semibold text-red-400;
+}
+
+.signup-footer {
+  @apply mt-20 text-gray-500;
+}
