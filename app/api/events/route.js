@@ -321,6 +321,19 @@ export async function PUT(request) {
 
 // DELETE - Remove event
 export async function DELETE(request) {
+
+
+  const user = await getUserFromSession(request);
+
+  if (!hasRole(user, ["admin"])) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Admin access required",
+    },
+    { status: 403 }
+  );
+}
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
 
