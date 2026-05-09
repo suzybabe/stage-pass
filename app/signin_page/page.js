@@ -67,6 +67,7 @@ export default function SignUpPage() {
         Password: "",
         Role: "attendee",
       });
+      setErrors({});
 
     } catch (err) {
       setMessage("Something went wrong.");

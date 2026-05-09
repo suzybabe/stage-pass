@@ -14,7 +14,7 @@ export default function Home() {
         <button className="hero-button">Explore Events</button>
         <ul>
         <a href="/booking_page">Go to booking page, </a>
-        <a href="/signin_page">Go to sign-in page, </a>
+        <a href="/signin_page">Go to sign-up page, </a>
         <a href="/login_page">Go to log-in page, </a>
         <a href="/events_page">Go to events page </a>
         </ul>      

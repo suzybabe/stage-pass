@@ -191,7 +191,7 @@ export async function POST(request) {
         await connection.rollback();
         connection.release();
         return NextResponse.json(
-          { success: false, message: "Event not found" },
+          { success: false, field: "EventId", message: "No event found with that ID" },
           { status: 404 }
         );
       }
@@ -255,6 +255,22 @@ export async function POST(request) {
           { status: 409 }
         );
       }
+
+      //Check if user exists before creating booking
+      const [userRows] = await connection.execute(
+       "SELECT UserId FROM Users WHERE UserId = ?",
+       [body.UserId]
+      );
+
+      if (userRows.length === 0) {
+        await connection.rollback();
+        connection.release();
+
+        return NextResponse.json(
+        { success: false, field: "UserId", message: "No user found with that ID" },
+        { status: 404 }
+      );
+    }
 
       // Calculate total price
       const totalPrice = event.Price * Number(body.NumberOfTickets);
