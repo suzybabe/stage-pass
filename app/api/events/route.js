@@ -1,6 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
-import { getUserFromSession, hasRole } from "../libs/auth";
+import { getUserFromSession, hasRole } from "../libs/authen";
 
 // Validation regex patterns
 const EVENTID_REGEX = /^\d+$/;

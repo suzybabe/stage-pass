@@ -1,6 +1,7 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
+import { getUserFromSession, hasRole } from "../libs/authen";
 
 // Validation regex patterns
 const USERID_REGEX = /^\d+$/;
@@ -413,6 +414,18 @@ export async function DELETE(request) {
   }
 
   try {
+
+    const user = await getUserFromSession(request);
+
+   if (!hasRole(user, ["admin"])) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Admin access required",
+    },
+    { status: 403 }
+  );
+}
     // Check user exists before deleting
     const [rows] = await pool.execute(
       "SELECT UserId FROM Users WHERE UserId = ?",

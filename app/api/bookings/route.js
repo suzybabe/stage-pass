@@ -1,5 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
+import { getUserFromSession, hasRole } from "../libs/authen";
 
 // Validation regex patterns
 const BOOKINGID_REGEX = /^\d+$/;
@@ -165,6 +166,18 @@ export async function POST(request) {
   }
 
   try {
+
+    const user = await getUserFromSession(request);
+
+    if (!hasRole(user, ["attendee"])) {
+    return NextResponse.json(
+      {
+      success: false,
+      message: "Only attendees can book events",
+    },
+    { status: 403 }
+    );
+  }
     const body = await request.json();
 
     // Run validation
