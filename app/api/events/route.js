@@ -141,7 +141,7 @@ export async function POST(request) {
         { status: 403 }
       );
     }
-    
+
     const body = await request.json();
 
     // Run validation
@@ -216,6 +216,18 @@ export async function POST(request) {
 // PUT - Update existing event
 export async function PUT(request) {
   try {
+
+    const user = await getUserFromSession(request);
+
+    if (!hasRole(user, ["organiser", "admin"])) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Access denied",
+      },
+    { status: 403 }
+    );
+  }
     const body = await request.json();
 
     // eventId is required to know which event to update
