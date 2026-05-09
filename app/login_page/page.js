@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./login.css";
+import NavBar from "../components/NavBar";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -46,6 +47,9 @@ export default function LoginPage() {
 }
 
   return (
+    <>
+     <NavBar />
+
     <main className="login-container">
       <section className="login-header">
         <h1 className="login-title">Sign In</h1>
@@ -89,5 +93,6 @@ export default function LoginPage() {
         © 2026 StagePass — Login Portal
       </footer>
     </main>
+    </>
   );
 }
