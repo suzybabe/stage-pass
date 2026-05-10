@@ -8,7 +8,7 @@ const USERID_REGEX = /^\d+$/;
 const NAME_REGEX = /^[a-zA-Z]{2,50}$/;
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 const MOBILE_REGEX = /^\d{10}$/;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 const VALID_ROLES = ["organiser", "attendee", "admin"];
 
@@ -69,7 +69,7 @@ export async function GET(request) {
   const userId = searchParams.get("userId");
   const page = parseInt(searchParams.get("page")) || 1;
   const limit = parseInt(searchParams.get("limit")) || 10;
-  const offset = (page - 1) * limit;
+  const offset = (page - 1) * limit;    //Calculate SQL offset for pagination
 
   try {
     // Get a specific user by userId
@@ -94,6 +94,7 @@ export async function GET(request) {
         [userId]
       );
 
+      //Check if no user exists 
       if (rows.length === 0) {
         return NextResponse.json(
           { success: false, message: "User not found" },
@@ -101,13 +102,19 @@ export async function GET(request) {
         );
       }
 
+      //Return single user object
       return NextResponse.json({
         success: true,
         user: rows[0],
       });
     }
 
-    // Get ALL users with pagination
+    //Covert values into safe numbers
+    const safeLimit = Math.max(1, Number(limit));
+    const safeOffset = Math.max(0, Number(offset));
+
+
+    //Get ALL users with pagination
     const [rows] = await pool.execute(
       `SELECT
          u.UserId,
@@ -118,15 +125,22 @@ export async function GET(request) {
          u.Role
        FROM Users u
        ORDER BY u.LastName ASC
+<<<<<<< ours
        LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
+=======
+      LIMIT ${safeLimit} OFFSET ${safeOffset}`
+>>>>>>> theirs
     );
 
-    // Get total count for pagination
+    //Get total count for pagination
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as total FROM Users`
     );
+
+    //Store total count
     const total = countResult[0].total;
 
+    //Return users and pagination data 
     return NextResponse.json({
       success: true,
       users: rows,
@@ -141,7 +155,7 @@ export async function GET(request) {
   } catch (err) {
     console.error("Users fetch error:", err);
     return NextResponse.json(
-      { success: false, message: "An unexpected error occurred" },
+      { success: false, message: err.message },
       { status: 500 }
     );
   }
@@ -450,7 +464,18 @@ export async function DELETE(request) {
     });
 
   } catch (err) {
-    console.error("DELETE /api/users error:", err);
+  console.error("DELETE /api/users error:", err);
+
+    if (err.code === "ER_ROW_IS_REFERENCED_2") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This user cannot be deleted because they have existing bookings.",
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { success: false, message: "Deletion failed" },
       { status: 500 }
