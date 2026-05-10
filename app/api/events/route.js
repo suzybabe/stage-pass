@@ -371,6 +371,15 @@ export async function DELETE(request) {
     });
 
   } catch (err) {
+    if (err.code === "ER_ROW_IS_REFERENCED_2") {
+      return NextResponse.json(
+        {
+        success: false,
+        message: "This event cannot be deleted because bookings exist for it.",
+      },
+      { status: 409 }
+    );
+  }
     console.error("DELETE /api/events error:", err);
     return NextResponse.json(
       { success: false, message: "Deletion failed" },

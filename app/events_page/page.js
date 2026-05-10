@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./events.css";
 import EventCard from "../components/EventCard";
-import NavBar from "../components/NavBar";
+import DynamicNavBar from "../components/DynamicNavBar";
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
@@ -36,7 +36,7 @@ export default function EventsPage() {
 
   return (
     <>
-      <NavBar />
+      <DynamicNavBar />
     <main className="events-container">
       <h1 className="events-title">Upcoming Events</h1>
 
