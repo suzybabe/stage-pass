@@ -125,11 +125,7 @@ export async function GET(request) {
          u.Role
        FROM Users u
        ORDER BY u.LastName ASC
-<<<<<<< ours
        LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
-=======
-      LIMIT ${safeLimit} OFFSET ${safeOffset}`
->>>>>>> theirs
     );
 
     //Get total count for pagination
