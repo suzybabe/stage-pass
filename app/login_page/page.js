@@ -34,9 +34,6 @@ export default function LoginPage() {
 
       console.log("User:", data.user);
 
-<<<<<<< ours
-      // window.location.href = "/";
-=======
       if (data.user.Role === "admin") {
         window.location.href = "/admin_dashboard";
       } else if (data.user.Role === "organiser") {
@@ -47,7 +44,6 @@ export default function LoginPage() {
         setMessage("Unknown user role.");
       }
 
->>>>>>> theirs
     } else {
       setMessage(data.message || "Login failed");
     }
