@@ -3,46 +3,53 @@
 import Link from "next/link";
 import "./navbar.css";
 
-export default function NavBar() {
+export default function NavBar({ role }) {
 
-  // Temporary role until login/authentication is connected
-  const userRole = "admin";
+  const navLinks = {
+    admin: [
+     { name: "Dashboard", href: "/admin_dashboard" },
+     { name: "Users", href: "/admin_users" },
+     { name: "Events", href: "/admin_events" },
+     { name: "Bookings", href: "/admin_bookings" },
+    ],
+
+    organiser: [
+     { name: "Dashboard", href: "/organiser_dashboard" },
+     { name: "Create Event", href: "/create_event" },
+     { name: "My Events", href: "/my_events" },
+     { name: "Bookings", href: "/organiser_bookings" },
+    ],
+
+    attendee: [
+     { name: "Dashboard", href: "/attendee_dashboard" },
+     { name: "Events", href: "/events_page" },
+     { name: "My Bookings", href: "/my_bookings" },
+    ],
+
+    home: [
+        { name: "Home", href: "/" }
+    ]
+  };
+
+    if (!role) {
+    return null;
+  }
 
   return (
     <nav className="navbar">
 
-      <h1 className="logo">StagePass</h1>
+    {/*//made to be able to always return to home where ever the user currently is */}
+        <Link href="/" className="logo">   
+            StagePass
+        </Link>
 
       <div className="nav-links">
 
-        <Link href="/">Home</Link>
-
-        {/* Admin navigation */}
-        {userRole === "admin" && (
-          <>
-            <Link href="/admin_users">Manage Users</Link>
-            <Link href="/admin_bookings">All Bookings</Link>
-            <Link href="/events_page">All Events</Link>
-          </>
-        )}
-
-        {/* Organiser navigation */}
-        {userRole === "organiser" && (
-          <>
-            <Link href="/create_event">Create Event</Link>
-            <Link href="/my_events">My Events</Link>
-            <Link href="/events_page">View Events</Link>
-          </>
-        )}
-
-        {/* Attendee navigation */}
-        {userRole === "attendee" && (
-          <>
-            <Link href="/events_page">View Events</Link>
-            <Link href="/booking_page">Book Tickets</Link>
-            <Link href="/my_bookings">My Bookings</Link>
-          </>
-        )}
+        {navLinks[role]?.map((link) => (
+          <Link key={link.href} href={link.href}>
+            {link.name}
+          </Link>
+        ))}
 
       </div>
     </nav>

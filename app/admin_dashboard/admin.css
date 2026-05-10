@@ -1,0 +1,55 @@
+@reference "../globals.css";
+
+.admin-container {
+  @apply flex flex-col items-center p-10 text-center;
+}
+
+.admin-header {
+  @apply max-w-3xl mt-10 mb-10;
+}
+
+.admin-title {
+  @apply text-4xl font-bold mb-4;
+}
+
+.admin-subtitle {
+  @apply text-gray-400;
+}
+
+.admin-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl;
+}
+
+.admin-card {
+  @apply bg-gray-800 text-white p-6 rounded-xl shadow hover:bg-gray-700 transition text-left;
+}
+
+.admin-card h2 {
+  @apply text-2xl font-bold text-pink-400 mb-2;
+}
+
+.admin-card p {
+  @apply text-gray-300;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.users-table th,
+.users-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.users-table th {
+  color: #ff4f9a;
+  font-weight: 700;
+}
+
+.users-table td {
+  color: white;
+}
