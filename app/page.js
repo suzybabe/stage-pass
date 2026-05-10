@@ -8,7 +8,8 @@ export default function Home() {
     <>
     <DynamicNavBar />
     <main className="home-container">
-
+    
+    
       {/* welcome message and button to direct you to events without using nav */ }
       <section className="hero">
         <h1 className="hero-title">Find Your Next Concert</h1>
@@ -28,6 +29,11 @@ export default function Home() {
           <Link href="/signin_page" className="secondary-button">
             Create Account
           </Link>
+
+          <Link href="/organiser_dashboard" className="secondary-button">
+            Organisers
+          </Link>
+
         </div>   
       </section>
   
