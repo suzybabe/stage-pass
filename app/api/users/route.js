@@ -126,6 +126,7 @@ export async function GET(request) {
        FROM Users u
        ORDER BY u.LastName ASC
       LIMIT ${safeLimit} OFFSET ${safeOffset}`
+
     );
 
     //Get total count for pagination
