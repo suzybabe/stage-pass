@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./login.css";
-import NavBar from "../components/NavBar";
+import DynamicNavBar from "../components/DynamicNavBar";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -34,7 +34,16 @@ export default function LoginPage() {
 
       console.log("User:", data.user);
 
-      // window.location.href = "/";
+      if (data.user.Role === "admin") {
+        window.location.href = "/admin_dashboard";
+      } else if (data.user.Role === "organiser") {
+        window.location.href = "/organiser_dashboard";
+      } else if (data.user.Role === "attendee") {
+        window.location.href = "/attendee_dashboard";
+      } else {
+        setMessage("Unknown user role.");
+      }
+
     } else {
       setMessage(data.message || "Login failed");
     }
@@ -47,7 +56,7 @@ export default function LoginPage() {
 
   return (
     <>
-     <NavBar />
+     <DynamicNavBar />
 
     <main className="login-container">
       <section className="login-header">

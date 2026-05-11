@@ -1,26 +1,40 @@
 import Image from "next/image";
 import "./home.css"; // Import your Tailwind-based CSS file
-import NavBar from "./components/NavBar";
+import DynamicNavBar from "./components/DynamicNavBar";
+import Link from "next/link";
 
 export default function Home() {
   return (
     <>
-    <NavBar />
+    <DynamicNavBar />
     <main className="home-container">
-
+    
+    
       {/* welcome message and button to direct you to events without using nav */ }
       <section className="hero">
         <h1 className="hero-title">Find Your Next Concert</h1>
         <p className="hero-subtitle">
           Discover live music, festivals, and unforgettable events.
         </p>
-        <button className="hero-button">Explore Events</button>
-        <ul>
-        <a href="/booking_page">Go to booking page, </a>
-        <a href="/signin_page">Go to sign-up page, </a>
-        <a href="/login_page">Go to log-in page, </a>
-        <a href="/events_page">Go to events page </a>
-        </ul>      
+
+        <div className="hero-actions">
+          <Link href="/events_page" className="hero-button">
+           Explore Events
+          </Link>
+
+          <Link href="/login_page" className="secondary-button">
+            Sign In
+          </Link>
+
+          <Link href="/signin_page" className="secondary-button">
+            Create Account
+          </Link>
+
+          <Link href="/organiser_dashboard" className="secondary-button">
+            Organisers
+          </Link>
+
+        </div>   
       </section>
   
       

@@ -3,7 +3,7 @@ import { useState } from "react";
 import "./booking.css";
 import "../signin_page/signup.css";
 import "../events_page/events.css"; /*importing nice card style from events_page to show same card style after booking */
-import NavBar from "../components/NavBar";
+import DynamicNavBar from "../components/DynamicNavBar";
 
 //reusable component used to display booking/event details
 import EventCard from "../components/EventCard";
@@ -103,7 +103,7 @@ export default function BookingPage() {
 
   return (
     <>
-      <NavBar />
+      <DynamicNavBar />
       <main className="booking-container">
 
         <section className="booking-header">

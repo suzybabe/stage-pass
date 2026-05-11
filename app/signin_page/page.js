@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import "./signup.css";
-import NavBar from "../components/NavBar";
+import DynamicNavBar from "../components/DynamicNavBar";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -77,7 +77,7 @@ export default function SignUpPage() {
 
   return (
     <>
-      <NavBar />
+      <DynamicNavBar />
 
     <main className="signup-container">
       <section className="signup-header">

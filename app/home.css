@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
 @reference "./globals.css";
 
 /* Container */
@@ -23,6 +21,14 @@
 
 .hero-button {
   @apply px-6 py-3 bg-purple-700 text-white rounded-lg hover:bg-pink-700 transition;
+}
+
+.hero-actions {
+  @apply flex justify-center gap-4 mt-6;
+}
+
+.secondary-button {
+  @apply px-6 py-3 rounded-lg border border-purple-600 text-purple-600 font-semibold hover:bg-purple-600 hover:text-white transition;
 }
 
 /* Events Section */
