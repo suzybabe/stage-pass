@@ -49,7 +49,7 @@ export default function AdminUpdateEventPage() {
           Capacity: data.event.Capacity,
           Price: data.event.Price,
           EventType: data.event.EventType,
-          OrganiserId: data.event.UserId,
+          OrganiserId: data.event.OrganiserId || data.event.UserId || "",
         });
 
         setMessage("Event loaded successfully.");
@@ -73,15 +73,21 @@ export default function AdminUpdateEventPage() {
         },
         credentials: "include",
         body: JSON.stringify(formData),
+          ...formData,
+          Capacity: Number(formData.Capacity),
+          Price: Number(formData.Price),
+          OrganiserId: Number(formData.OrganiserId),
       });
 
       const data = await response.json();
 
       if (data.success) {
         setMessage("Event updated successfully!");
+      } else if (data.errors) {
+        setMessage(Object.values(data.errors).join(", "));
       } else {
         setMessage(data.message || "Could not update event");
-      }
+      }   
     } catch (error) {
       console.error(error);
       setMessage("Something went wrong while updating event");
@@ -221,6 +227,18 @@ export default function AdminUpdateEventPage() {
                 <option value="Sports">Sports</option>
               </select>
             </label>
+
+            <label>
+             Organiser ID
+             <input
+             type="number"
+             name="OrganiserId"
+             className="input"
+             value={formData.OrganiserId || ""}
+             onChange={handleChange}
+             required
+           />
+        </label>
 
             <button type="submit" className="submit-button">
               Update Event

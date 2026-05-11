@@ -36,26 +36,24 @@ export default function AdminCreateUserPage() {
       });
 
       const data = await response.json();
+      console.log("API response:", data);
 
       if (data.success) {
         setMessage("User created successfully!");
-
-        setFormData({
-          FirstName: "",
-          LastName: "",
-          Email: "",
-          Mobile: "",
-          Password: "",
-          Role: "attendee",
-        });
       } else {
-        setMessage(data.message || "Could not create user");
+        if (data.errors) {
+          const errorMessages = Object.values(data.errors).join(", ");
+          setMessage(errorMessages); //pulling error messages from the api/users
+      } else {
+        setMessage(data.message || data.error || "Could not create user");
       }
-    } catch (error) {
+    }
+   } catch (error) {
       console.error(error);
       setMessage("Something went wrong");
     }
-  }
+}
+
 
   return (
     <>

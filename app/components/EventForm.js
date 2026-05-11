@@ -16,8 +16,10 @@ export default function EventForm() {
     OrganiserId: "",
   });
 
+  //Stores success/error messages shown to the user
   const [message, setMessage] = useState("");
 
+  //Updates form state whenever user types into an input field
   function handleChange(e) {
     setFormData({
       ...formData,
@@ -25,10 +27,13 @@ export default function EventForm() {
     });
   }
 
+  //Handles event form submission
   async function createEvent(e) {
     e.preventDefault();
 
     try {
+
+      //Sends POST request to backend API
       const response = await fetch("/api/events", {
         method: "POST",
         headers: {
@@ -40,9 +45,11 @@ export default function EventForm() {
 
       const data = await response.json();
 
+      //Successful event creation
       if (data.success) {
         setMessage("Event created successfully!");
 
+        //Reset form fields after successful submission
         setFormData({
           Title: "",
           Description: "",
@@ -55,6 +62,8 @@ export default function EventForm() {
           OrganiserId: "",
         });
       } else {
+
+        //Display validation errors returned from API
         if (data.errors) {
           setMessage(Object.values(data.errors).join(" | "));
         } else {
@@ -62,6 +71,8 @@ export default function EventForm() {
         }
       }
     } catch (error) {
+
+      //Handles unexpected server/network errors
       console.error(error);
       setMessage("Something went wrong while creating event");
     }
@@ -70,7 +81,10 @@ export default function EventForm() {
   return (
     <>
     
+      {/* Event creation form */}
       <form className="login-form" onSubmit={createEvent}>
+
+        {/*Event title input */}
         <label>
           Title
           <input
@@ -83,6 +97,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Event description input */}
         <label>
           Description
           <input
@@ -95,6 +110,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/* Event location input */}
         <label>
           Location
           <input
@@ -107,6 +123,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Event date input */}
         <label>
           Event Date
           <input
@@ -119,6 +136,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Event time input */}
         <label>
           Event Time
           <input
@@ -131,6 +149,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Event capacity input */}
         <label>
           Capacity
           <input
@@ -143,6 +162,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Event price input */}
         <label>
           Price
           <input
@@ -156,6 +176,7 @@ export default function EventForm() {
           />
         </label>
 
+        {/*Dropdown selection for event category */}
         <label>
           Event Type
           <select

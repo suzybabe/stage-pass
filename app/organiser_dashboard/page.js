@@ -21,13 +21,13 @@ export default function OrganiserDashboardPage() {
             <p>Add a new event to StagePass.</p>
           </Link>
 
-          <Link href="/my_events" className="admin-card">
-            <h2>My Events</h2>
-            <p>View, update, or delete your own events.</p>
+          <Link href="/events_page" className="admin-card">
+            <h2>Events</h2>
+            <p>View your own event.</p>
           </Link>
 
-          <Link href="/organiser_bookings" className="admin-card">
-            <h2>Event Bookings</h2>
+          <Link href="/admin_bookings" className="admin-card">
+            <h2>Bookings</h2>
             <p>View bookings for your events.</p>
           </Link>
         </section>

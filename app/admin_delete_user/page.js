@@ -37,11 +37,6 @@ export default function AdminDeleteUserPage() {
   console.error(error);
   setMessage("Something went wrong while deleting user");
 }
-
-  return NextResponse.json(
-    { success: false, message: "Deletion failed" },
-    { status: 500 }
-  );
 }
   
 
