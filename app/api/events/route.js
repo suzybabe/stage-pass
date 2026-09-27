@@ -1,6 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
-import { getUserFromSession, hasRole } from "../libs/authen";
+import { getUserFromSession, hasRole, isSameUser } from "../libs/authen";
 
 // Validation regex patterns
 const EVENTID_REGEX = /^\d+$/;
@@ -41,7 +41,8 @@ function validateEvent(data) {
   if (!data.EventType || !VALID_EVENT_TYPES.includes(data.EventType))
     errors.EventType = "Please select a valid event type";
 
-  if (!data.OrganiserId || !EVENTID_REGEX.test(data.OrganiserId))
+  // OrganiserId is optional, it defaults to the logged in user
+  if (data.OrganiserId && !EVENTID_REGEX.test(data.OrganiserId))
     errors.OrganiserId = "Invalid organiser ID";
 
   return errors;
@@ -77,11 +78,18 @@ export async function GET(request) {
            u.FirstName,
            u.LastName,
            u.Email
-         FROM Events e
-         JOIN Users u ON e.OrganiserId = u.UserId
+         FROM events e
+         JOIN users u ON e.OrganiserId = u.UserId
          WHERE e.EventId = ?`,
         [eventId]
       );
+
+      if (rows.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "Event not found" },
+          { status: 404 }
+        );
+      }
 
       return NextResponse.json({
         success: true,
@@ -105,8 +113,8 @@ export async function GET(request) {
          u.FirstName,
          u.LastName,
          u.Email
-       FROM Events e
-       JOIN Users u ON e.OrganiserId = u.UserId
+       FROM events e
+       JOIN users u ON e.OrganiserId = u.UserId
        ORDER BY e.EventDate ASC`
     );
 
@@ -152,13 +160,30 @@ export async function POST(request) {
         { success: false, errors, values: body },
         { status: 400 }
       );
+    }
 
-      
+    // Organisers always create events under their own ID,
+    // admins can create an event for another organiser
+    const organiserId = hasRole(user, ["admin"]) && body.OrganiserId
+      ? body.OrganiserId
+      : user.UserId;
+
+    // Make sure the organiser exists
+    const [organiserRows] = await pool.execute(
+      "SELECT UserId FROM users WHERE UserId = ? AND Role IN ('organiser', 'admin')",
+      [organiserId]
+    );
+
+    if (organiserRows.length === 0) {
+      return NextResponse.json(
+        { success: false, errors: { OrganiserId: "No organiser found with that ID" }, values: body },
+        { status: 400 }
+      );
     }
 
     // Check if event with same title, date and location already exists
     const [existing] = await pool.execute(
-      "SELECT EventId FROM Events WHERE Title = ? AND EventDate = ? AND Location = ?",
+      "SELECT EventId FROM events WHERE Title = ? AND EventDate = ? AND Location = ?",
       [body.Title, body.EventDate, body.Location]
     );
 
@@ -171,7 +196,7 @@ export async function POST(request) {
 
     // Insert new event into database
     const [insertResult] = await pool.execute(
-      `INSERT INTO Events (Title, Description, Location, EventDate, EventTime, Capacity, Price, EventType, OrganiserId)
+      `INSERT INTO events (Title, Description, Location, EventDate, EventTime, Capacity, Price, EventType, OrganiserId)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.Title,
@@ -182,7 +207,7 @@ export async function POST(request) {
         body.Capacity,
         body.Price,
         body.EventType,
-        body.OrganiserId,
+        organiserId,
       ]
     );
 
@@ -196,7 +221,7 @@ export async function POST(request) {
       capacity: body.Capacity,
       price: body.Price,
       eventType: body.EventType,
-      organiserId: body.OrganiserId,
+      organiserId: organiserId,
     };
 
     return NextResponse.json(
@@ -253,7 +278,7 @@ export async function PUT(request) {
     try {
       // Check event exists in database
       const [eventRows] = await connection.execute(
-        "SELECT EventId FROM Events WHERE EventId = ?",
+        "SELECT EventId, OrganiserId FROM events WHERE EventId = ?",
         [body.eventId]
       );
 
@@ -263,6 +288,16 @@ export async function PUT(request) {
         return NextResponse.json(
           { success: false, message: "Event not found" },
           { status: 404 }
+        );
+      }
+
+      // Organisers can only update their own events
+      if (!hasRole(user, ["admin"]) && !isSameUser(user, eventRows[0].OrganiserId)) {
+        await connection.rollback();
+        connection.release();
+        return NextResponse.json(
+          { success: false, message: "You can only update your own events" },
+          { status: 403 }
         );
       }
 
@@ -292,7 +327,7 @@ export async function PUT(request) {
       if (updates.length > 0) {
         // Add eventId for WHERE clause
         values.push(body.eventId);
-        const query = `UPDATE Events SET ${updates.join(", ")} WHERE EventId = ?`;
+        const query = `UPDATE events SET ${updates.join(", ")} WHERE EventId = ?`;
         await connection.execute(query, values);
       }
 
@@ -348,7 +383,7 @@ export async function DELETE(request) {
   try {
     // Check event exists before deleting
     const [rows] = await pool.execute(
-      "SELECT EventId FROM Events WHERE EventId = ?",
+      "SELECT EventId FROM events WHERE EventId = ?",
       [eventId]
     );
 
@@ -361,7 +396,7 @@ export async function DELETE(request) {
 
     // Delete the event
     await pool.execute(
-      "DELETE FROM Events WHERE EventId = ?",
+      "DELETE FROM events WHERE EventId = ?",
       [eventId]
     );
 

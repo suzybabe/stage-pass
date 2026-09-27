@@ -12,6 +12,7 @@
   @apply flex gap-6 items-center;
 }
 
-.nav-links a {
-  @apply text-sm font-semibold hover:text-pink-400 transition;
+.nav-links a,
+.nav-links button {
+  @apply text-sm font-semibold hover:text-pink-400 transition cursor-pointer;
 }

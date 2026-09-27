@@ -174,14 +174,14 @@ export default function EventForm() {
         </label>
 
         <label>
-          Organiser ID
+          Organiser ID (admins only)
           <input
             type="text"
             name="OrganiserId"
             className="input"
             value={formData.OrganiserId}
             onChange={handleChange}
-            required
+            placeholder="Leave blank to use your own account"
           />
         </label>
 

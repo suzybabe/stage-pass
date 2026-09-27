@@ -1,6 +1,6 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
-import { getUserFromSession, hasRole } from "../libs/authen";
+import { getUserFromSession, hasRole, isSameUser } from "../libs/authen";
 
 // Validation regex patterns
 const BOOKINGID_REGEX = /^\d+$/;
@@ -11,9 +11,6 @@ const TICKETS_REGEX = /^\d+$/;
 // Validate booking data before saving to database
 function validateBooking(data) {
   const errors = {};
-
-  if (!data.UserId || !USERID_REGEX.test(data.UserId))
-    errors.UserId = "Valid user ID is required";
 
   if (!data.EventId || !EVENTID_REGEX.test(data.EventId))
     errors.EventId = "Valid event ID is required";
@@ -35,8 +32,20 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const bookingId = searchParams.get("bookingId");
   const userId = searchParams.get("userId");
+  const organiserId = searchParams.get("organiserId");
 
   try {
+    const user = await getUserFromSession(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "You must be logged in" },
+        { status: 401 }
+      );
+    }
+
+    const isAdmin = hasRole(user, ["admin"]);
+
     // Get a specific booking by bookingId
     if (bookingId) {
       if (!BOOKINGID_REGEX.test(bookingId)) {
@@ -63,12 +72,27 @@ export async function GET(request) {
            e.EventDate,
            e.EventTime,
            e.Price
-         FROM Bookings b
-         JOIN Users u ON b.UserId = u.UserId
-         JOIN Events e ON b.EventId = e.EventId
+         FROM bookings b
+         JOIN users u ON b.UserId = u.UserId
+         JOIN events e ON b.EventId = e.EventId
          WHERE b.BookingId = ?`,
         [bookingId]
       );
+
+      if (rows.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "Booking not found" },
+          { status: 404 }
+        );
+      }
+
+      // Users can only view their own bookings, admins can view any
+      if (!isAdmin && !isSameUser(user, rows[0].UserId)) {
+        return NextResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
+        );
+      }
 
       return NextResponse.json({
         success: true,
@@ -82,6 +106,13 @@ export async function GET(request) {
         return NextResponse.json(
           { success: false, message: "Invalid userId format" },
           { status: 400 }
+        );
+      }
+
+      if (!isAdmin && !isSameUser(user, userId)) {
+        return NextResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
         );
       }
 
@@ -102,9 +133,9 @@ export async function GET(request) {
            e.EventDate,
            e.EventTime,
            e.Price
-         FROM Bookings b
-         JOIN Users u ON b.UserId = u.UserId
-         JOIN Events e ON b.EventId = e.EventId
+         FROM bookings b
+         JOIN users u ON b.UserId = u.UserId
+         JOIN events e ON b.EventId = e.EventId
          WHERE b.UserId = ?
          ORDER BY b.BookingDate DESC`,
         [userId]
@@ -114,6 +145,61 @@ export async function GET(request) {
         success: true,
         bookings: rows,
       });
+    }
+
+    // Get all bookings for events run by a specific organiser
+    if (organiserId) {
+      if (!USERID_REGEX.test(organiserId)) {
+        return NextResponse.json(
+          { success: false, message: "Invalid organiserId format" },
+          { status: 400 }
+        );
+      }
+
+      if (!isAdmin && !isSameUser(user, organiserId)) {
+        return NextResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
+        );
+      }
+
+      const [rows] = await pool.execute(
+        `SELECT
+           b.BookingId,
+           b.BookingDate,
+           b.NumberOfTickets,
+           b.TotalPrice,
+           b.Status,
+           u.UserId,
+           u.FirstName,
+           u.LastName,
+           u.Email,
+           e.EventId,
+           e.Title,
+           e.Location,
+           e.EventDate,
+           e.EventTime,
+           e.Price
+         FROM bookings b
+         JOIN users u ON b.UserId = u.UserId
+         JOIN events e ON b.EventId = e.EventId
+         WHERE e.OrganiserId = ?
+         ORDER BY b.BookingDate DESC`,
+        [organiserId]
+      );
+
+      return NextResponse.json({
+        success: true,
+        bookings: rows,
+      });
+    }
+
+    // Only admins can view ALL bookings
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Admin access required" },
+        { status: 403 }
+      );
     }
 
     // Get ALL bookings if no params provided
@@ -134,9 +220,9 @@ export async function GET(request) {
          e.EventDate,
          e.EventTime,
          e.Price
-       FROM Bookings b
-       JOIN Users u ON b.UserId = u.UserId
-       JOIN Events e ON b.EventId = e.EventId
+       FROM bookings b
+       JOIN users u ON b.UserId = u.UserId
+       JOIN events e ON b.EventId = e.EventId
        ORDER BY b.BookingDate DESC`
     );
 
@@ -196,7 +282,7 @@ export async function POST(request) {
     try {
       // Check if the event exists and get its details
       const [eventRows] = await connection.execute(
-        "SELECT EventId, Capacity, Price FROM Events WHERE EventId = ?",
+        "SELECT EventId, Capacity, Price FROM events WHERE EventId = ?",
         [body.EventId]
       );
 
@@ -213,7 +299,7 @@ export async function POST(request) {
 
       // Check how many tickets already booked for this event
       const [bookedRows] = await connection.execute(
-        "SELECT SUM(NumberOfTickets) as TotalBooked FROM Bookings WHERE EventId = ? AND Status = 'confirmed'",
+        "SELECT SUM(NumberOfTickets) as TotalBooked FROM bookings WHERE EventId = ? AND Status = 'confirmed'",
         [body.EventId]
       );
 
@@ -248,11 +334,11 @@ export async function POST(request) {
           u.FirstName,
           u.LastName,
           u.Email
-        FROM Bookings b
-        JOIN Events e ON b.EventId = e.EventId
-        JOIN Users u ON b.UserId = u.UserId
+        FROM bookings b
+        JOIN events e ON b.EventId = e.EventId
+        JOIN users u ON b.UserId = u.UserId
         WHERE b.UserId = ? AND b.EventId = ? AND b.Status = 'confirmed'`,
-       [body.UserId, body.EventId]
+       [user.UserId, body.EventId]
       );
 
       if (existingBooking.length > 0) {
@@ -269,31 +355,15 @@ export async function POST(request) {
         );
       }
 
-      //Check if user exists before creating booking
-      const [userRows] = await connection.execute(
-       "SELECT UserId FROM Users WHERE UserId = ?",
-       [body.UserId]
-      );
-
-      if (userRows.length === 0) {
-        await connection.rollback();
-        connection.release();
-
-        return NextResponse.json(
-        { success: false, field: "UserId", message: "No user found with that ID" },
-        { status: 404 }
-      );
-    }
-
       // Calculate total price
       const totalPrice = event.Price * Number(body.NumberOfTickets);
 
       // Insert new booking
       const [insertResult] = await connection.execute(
-        `INSERT INTO Bookings (UserId, EventId, BookingDate, NumberOfTickets, TotalPrice, Status)
+        `INSERT INTO bookings (UserId, EventId, BookingDate, NumberOfTickets, TotalPrice, Status)
          VALUES (?, ?, NOW(), ?, ?, 'confirmed')`,
         [
-          body.UserId,
+          user.UserId,
           body.EventId,
           body.NumberOfTickets,
           totalPrice,
@@ -317,9 +387,9 @@ export async function POST(request) {
         u.FirstName,
         u.LastName,
         u.Email
-      FROM Bookings b
-      JOIN Events e ON b.EventId = e.EventId
-      JOIN Users u ON b.UserId = u.UserId
+      FROM bookings b
+      JOIN events e ON b.EventId = e.EventId
+      JOIN users u ON b.UserId = u.UserId
       WHERE b.BookingId = ?`,
      [insertResult.insertId]
      );
@@ -361,9 +431,18 @@ export async function DELETE(request) {
   }
 
   try {
+    const user = await getUserFromSession(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "You must be logged in" },
+        { status: 401 }
+      );
+    }
+
     // Check booking exists before cancelling
     const [rows] = await pool.execute(
-      "SELECT BookingId, Status FROM Bookings WHERE BookingId = ?",
+      "SELECT BookingId, UserId, Status FROM bookings WHERE BookingId = ?",
       [bookingId]
     );
 
@@ -371,6 +450,14 @@ export async function DELETE(request) {
       return NextResponse.json(
         { success: false, message: "Booking not found" },
         { status: 404 }
+      );
+    }
+
+    // Users can only cancel their own bookings, admins can cancel any
+    if (!hasRole(user, ["admin"]) && !isSameUser(user, rows[0].UserId)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 403 }
       );
     }
 
@@ -384,7 +471,7 @@ export async function DELETE(request) {
 
     // Cancel booking by updating status
     await pool.execute(
-      "UPDATE Bookings SET Status = 'cancelled' WHERE BookingId = ?",
+      "UPDATE bookings SET Status = 'cancelled' WHERE BookingId = ?",
       [bookingId]
     );
 

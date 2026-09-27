@@ -1,6 +1,7 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
+import { createSessionToken, SESSION_COOKIE_OPTIONS } from "../libs/authen";
 
 export async function POST(request) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request) {
 
     // Find user by email
     const [rows] = await pool.execute(
-      "SELECT * FROM Users WHERE Email = ?",
+      "SELECT * FROM users WHERE Email = ?",
       [body.Email]
     );
 
@@ -66,14 +67,12 @@ export async function POST(request) {
       },
     });
 
-    // Create session cookie
-    response.cookies.set("session", user.UserId.toString(), {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24, // 1 day
-      path: "/",
-    });
+    // Create signed session cookie
+    response.cookies.set(
+      "session",
+      createSessionToken(user.UserId),
+      SESSION_COOKIE_OPTIONS
+    );
 
     return response;
 

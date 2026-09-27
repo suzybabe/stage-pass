@@ -177,7 +177,6 @@ export default function SignUpPage() {
           >
             <option value="attendee">Attendee</option>
             <option value="organiser">Organiser</option>
-            <option value="admin">Admin</option>
           </select>
         </label>
 

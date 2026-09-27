@@ -35,6 +35,12 @@ export default function NavBar({ role }) {
     return null;
   }
 
+  // Clear the session cookie and go back to the home page
+  async function handleLogout() {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/";
+  }
+
   return (
     <nav className="navbar">
 
@@ -50,6 +56,18 @@ export default function NavBar({ role }) {
             {link.name}
           </Link>
         ))}
+
+        {/* Logged in users get a log out button, visitors get log in / sign up */}
+        {role === "home" ? (
+          <>
+            <Link href="/login_page">Log In</Link>
+            <Link href="/signin_page">Sign Up</Link>
+          </>
+        ) : (
+          <button type="button" onClick={handleLogout}>
+            Log Out
+          </button>
+        )}
 
       </div>
     </nav>

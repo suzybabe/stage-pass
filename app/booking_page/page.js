@@ -12,7 +12,6 @@ export default function BookingPage() {
 
   //Stores all form input values 
   const [formData, setFormData] = useState({
-    UserId: "",
     EventId: "",
     NumberOfTickets: "",
   });
@@ -20,7 +19,7 @@ export default function BookingPage() {
   //General success/error message
   const [message, setMessage] = useState("");
 
-  //Stores field-specific validation errors (e.g "No user found " "invalid event id ")
+  //Stores field-specific validation errors (e.g "invalid event id ")
   const [errors, setErrors] = useState({});
 
   //Stores booking details returned from API 
@@ -91,7 +90,7 @@ export default function BookingPage() {
       setMessage("Booking confirmed! Booking ID: " + data.booking.BookingId);
 
       //Reset after booking
-      setFormData({ UserId: "", EventId: "", NumberOfTickets: "" });
+      setFormData({ EventId: "", NumberOfTickets: "" });
 
       //Save booking returned from backend (renders Event card)
       setBooking(data.booking);
@@ -115,21 +114,6 @@ export default function BookingPage() {
 
         {/*Booking form */}
         <form className="booking-form" onSubmit={handleSubmit}>
-
-          <label>
-            User ID
-            <input
-              type="number"
-              name="UserId"
-              className="input"
-              value={formData.UserId}
-              onChange={handleChange}
-              required
-            />
-
-            {/*Inline validation error */}
-            {errors.UserId && <p className="field-error">{errors.UserId}</p>}
-          </label>
 
           <label>
             Event ID

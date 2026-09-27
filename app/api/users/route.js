@@ -1,7 +1,7 @@
 import pool from "../libs/db";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { getUserFromSession, hasRole } from "../libs/authen";
+import { getUserFromSession, hasRole, isSameUser } from "../libs/authen";
 
 // Validation regex patterns
 const USERID_REGEX = /^\d+$/;
@@ -14,7 +14,7 @@ const VALID_ROLES = ["organiser", "attendee", "admin"];
 
 // Check if email already exists in database
 async function emailExists(email, excludeUserId = null) {
-  let query = "SELECT UserId FROM Users WHERE Email = ?";
+  let query = "SELECT UserId FROM users WHERE Email = ?";
   let params = [email];
 
   if (excludeUserId) {
@@ -72,12 +72,29 @@ export async function GET(request) {
   const offset = (page - 1) * limit;    //Calculate SQL offset for pagination
 
   try {
+    const user = await getUserFromSession(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "You must be logged in" },
+        { status: 401 }
+      );
+    }
+
     // Get a specific user by userId
     if (userId) {
       if (!USERID_REGEX.test(userId)) {
         return NextResponse.json(
           { success: false, message: "Invalid userId format" },
           { status: 400 }
+        );
+      }
+
+      // Users can only view their own details, admins can view anyone
+      if (!hasRole(user, ["admin"]) && !isSameUser(user, userId)) {
+        return NextResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
         );
       }
 
@@ -89,7 +106,7 @@ export async function GET(request) {
            u.Email,
            u.Mobile,
            u.Role
-         FROM Users u
+         FROM users u
          WHERE u.UserId = ?`,
         [userId]
       );
@@ -109,10 +126,17 @@ export async function GET(request) {
       });
     }
 
+    // Only admins can view the full user list
+    if (!hasRole(user, ["admin"])) {
+      return NextResponse.json(
+        { success: false, message: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     //Covert values into safe numbers
     const safeLimit = Math.max(1, Number(limit));
     const safeOffset = Math.max(0, Number(offset));
-
 
     //Get ALL users with pagination
     const [rows] = await pool.execute(
@@ -123,14 +147,14 @@ export async function GET(request) {
          u.Email,
          u.Mobile,
          u.Role
-       FROM Users u
+       FROM users u
        ORDER BY u.LastName ASC
-       LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
+       LIMIT ${safeLimit} OFFSET ${safeOffset}`
     );
 
     //Get total count for pagination
     const [countResult] = await pool.execute(
-      `SELECT COUNT(*) as total FROM Users`
+      `SELECT COUNT(*) as total FROM users`
     );
 
     //Store total count
@@ -151,7 +175,7 @@ export async function GET(request) {
   } catch (err) {
     console.error("Users fetch error:", err);
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: "An unexpected error occurred" },
       { status: 500 }
     );
   }
@@ -181,6 +205,18 @@ export async function POST(request) {
       );
     }
 
+    // Only an admin can create another admin account
+    if (body.Role === "admin") {
+      const user = await getUserFromSession(request);
+
+      if (!hasRole(user, ["admin"])) {
+        return NextResponse.json(
+          { success: false, message: "Only an admin can create admin accounts" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Check if email already exists
     const emailTaken = await emailExists(body.Email);
     if (emailTaken) {
@@ -196,7 +232,7 @@ export async function POST(request) {
 
     // Insert new user into database
     const [insertResult] = await pool.execute(
-      `INSERT INTO Users (FirstName, LastName, Email, Mobile, Password, Role)
+      `INSERT INTO users (FirstName, LastName, Email, Mobile, Password, Role)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         body.FirstName,
@@ -250,13 +286,38 @@ export async function PUT(request) {
       );
     }
 
+    const user = await getUserFromSession(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "You must be logged in" },
+        { status: 401 }
+      );
+    }
+
+    // Users can only update themselves, admins can update anyone
+    if (!hasRole(user, ["admin"]) && !isSameUser(user, body.UserId)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    // Only admins can change a role
+    if (!hasRole(user, ["admin"]) && body.Role !== undefined && body.Role !== user.Role) {
+      return NextResponse.json(
+        { success: false, message: "Only an admin can change roles" },
+        { status: 403 }
+      );
+    }
+
     const connection = await pool.getConnection();
     await connection.beginTransaction();
 
     try {
       // Check user exists in database
       const [userRows] = await connection.execute(
-        "SELECT UserId, Email FROM Users WHERE UserId = ?",
+        "SELECT UserId, Email FROM users WHERE UserId = ?",
         [body.UserId]
       );
 
@@ -375,7 +436,7 @@ export async function PUT(request) {
 
       if (updates.length > 0) {
         await connection.execute(
-          `UPDATE Users SET ${updates.join(", ")} WHERE UserId = ?`,
+          `UPDATE users SET ${updates.join(", ")} WHERE UserId = ?`,
           values
         );
       }
@@ -437,7 +498,7 @@ export async function DELETE(request) {
 }
     // Check user exists before deleting
     const [rows] = await pool.execute(
-      "SELECT UserId FROM Users WHERE UserId = ?",
+      "SELECT UserId FROM users WHERE UserId = ?",
       [userId]
     );
 
@@ -450,7 +511,7 @@ export async function DELETE(request) {
 
     // Delete the user
     await pool.execute(
-      "DELETE FROM Users WHERE UserId = ?",
+      "DELETE FROM users WHERE UserId = ?",
       [userId]
     );
 
